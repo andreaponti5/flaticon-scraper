@@ -3,14 +3,6 @@
         {
             "src": "app/app.py",
             "use": "@vercel/python"
-        },
-        {
-            "src": "app/scraper.py",
-            "use": "@vercel/python"
-        },
-        {
-            "src": "app/__init__.py",
-            "use": "@vercel/python"
         }
     ],
     "routes": [

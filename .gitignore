@@ -1,0 +1,10 @@
+venv
+__pycache__
+*.pyc
+.env
+
+# PyCharm stuff
+.idea
+
+# MacOS stuff
+.DS_Store

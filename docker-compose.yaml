@@ -1,0 +1,17 @@
+version: '3.7'
+
+networks:
+  network:
+    driver: bridge
+
+services:
+  dashboard:
+    build:
+      context: ./
+    container_name: dashboard
+    hostname: dashboard
+    ports:
+      - "5000:80"
+    networks:
+      - network
+

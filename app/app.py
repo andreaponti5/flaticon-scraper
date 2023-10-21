@@ -1,3 +1,4 @@
+import io
 import logging
 import zipfile
 from typing import Tuple, List, Union
@@ -304,7 +305,8 @@ def download_imgs(
     """
     logging.debug(f"Callback triggered: download_imgs [{n_clicks}]")
     if n_clicks and len(sum(dash_app.imgs_url_to_dwnl.values(), [])) > 0:
-        with zipfile.ZipFile(dash_app.folder_name, "w") as zipf:
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w") as zipf:
             for key in dash_app.imgs_url_to_dwnl:
                 logging.info(f"Downloading images [{key}]: {dash_app.imgs_url_to_dwnl[key]}")
                 use_idx = True if len(dash_app.imgs_url_to_dwnl[key]) > 1 else False
@@ -316,7 +318,8 @@ def download_imgs(
                             zipf.writestr(f"{key}_{i + 1}.png", image_data)
                         else:
                             zipf.writestr(f"{key}.png", image_data)
-        return dcc.send_file(dash_app.folder_name)
+        zip_buffer.seek(0)
+        return dcc.send_bytes(src=zip_buffer.getvalue(), filename=dash_app.folder_name)
 
 
 if __name__ == '__main__':

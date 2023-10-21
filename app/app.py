@@ -14,23 +14,24 @@ from scraper import get_icons_url
 logging.basicConfig(format='[%(asctime)s] [%(levelname)s]: %(message)s', level=logging.INFO)
 
 # Initialize the Dash app
-app = dash.Dash(__name__,
-                external_stylesheets=[
-                    dbc.icons.BOOTSTRAP,
-                    dbc.themes.BOOTSTRAP,
-                    "https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap",
-                    "/assets/style.css"
-                ])
-app.title = "Flaticon Scraper"
-server = app.server
+dash_app = dash.Dash(__name__,
+                     external_stylesheets=[
+                         dbc.icons.BOOTSTRAP,
+                         dbc.themes.BOOTSTRAP,
+                         "https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap",
+                         "/assets/style.css"
+                     ])
+dash_app.title = "Flaticon Scraper"
+server = dash_app.server
+app = dash_app.server
 
 # Init variables to keep the status
-app.current_page = None
-app.search_queries = []
-app.imgs_scraped = {}
-app.selection_state = {}
-app.imgs_url_to_dwnl = {}
-app.folder_name = "flaticon-scraper.zip"
+dash_app.current_page = None
+dash_app.search_queries = []
+dash_app.imgs_scraped = {}
+dash_app.selection_state = {}
+dash_app.imgs_url_to_dwnl = {}
+dash_app.folder_name = "flaticon-scraper.zip"
 
 # Define the search bar
 search_bar = dbc.Row([
@@ -114,7 +115,7 @@ navbar = dbc.Row([
 )
 
 # Define the app layout
-app.layout = dbc.Container([
+dash_app.layout = dbc.Container([
     html.Br(),
     search_bar,
     navbar,
@@ -122,7 +123,7 @@ app.layout = dbc.Container([
 ], fluid=True, style={"max-width": "90%"})
 
 
-@app.callback(
+@dash_app.callback(
     Output("row-navbar", "style"),
     Output("h2-subpage", "children", allow_duplicate=True),
     Input("search-button", "n_clicks"),
@@ -150,19 +151,19 @@ def scrape_imgs(
             "border-radius": "25px"
         }
         if ";" not in search_query:
-            app.search_queries = [search_query.strip()]
+            dash_app.search_queries = [search_query.strip()]
         else:
-            app.search_queries = [query.strip() for query in search_query.split(";")]
-        logging.info(f"Search queries: {app.search_queries}")
-        app.imgs_scraped = {query: get_icons_url(query) for query in app.search_queries}
-        app.selection_state = {query: [0] * len(app.imgs_scraped[query]) for query in app.search_queries}
-        app.imgs_url_to_dwnl = {query: [] for query in app.search_queries}
-        app.current_page = 0
-        return style, app.search_queries[0]
+            dash_app.search_queries = [query.strip() for query in search_query.split(";")]
+        logging.info(f"Search queries: {dash_app.search_queries}")
+        dash_app.imgs_scraped = {query: get_icons_url(query) for query in dash_app.search_queries}
+        dash_app.selection_state = {query: [0] * len(dash_app.imgs_scraped[query]) for query in dash_app.search_queries}
+        dash_app.imgs_url_to_dwnl = {query: [] for query in dash_app.search_queries}
+        dash_app.current_page = 0
+        return style, dash_app.search_queries[0]
     raise PreventUpdate
 
 
-@app.callback(
+@dash_app.callback(
     Output("images-row", "children", allow_duplicate=True),
     Input("h2-subpage", "children"),
     prevent_initial_call=True,
@@ -177,7 +178,7 @@ def show_imgs(
     :return: a list of images wrapped in dbc.Col.
     """
     logging.debug(f"Callback triggered: show_imgs [{title}]")
-    if title in app.search_queries:
+    if title in dash_app.search_queries:
         return [dbc.Col([
             html.Img(
                 src=url,
@@ -185,11 +186,11 @@ def show_imgs(
                 className="image",
                 n_clicks=0,
             )
-        ]) for i, url in enumerate(app.imgs_scraped[title])]
+        ]) for i, url in enumerate(dash_app.imgs_scraped[title])]
     raise PreventUpdate
 
 
-@app.callback(
+@dash_app.callback(
     Output("h2-subpage", "children", allow_duplicate=True),
     Input("next-button", "n_clicks"),
     Input("previous-button", "n_clicks"),
@@ -210,22 +211,22 @@ def change_page(
     button_id = ctx.triggered_id
     if button_id is not None:
         if (next_n_clicks > 0) and (button_id == "next-button"):
-            app.current_page = app.current_page + 1
+            dash_app.current_page = dash_app.current_page + 1
             logging.info(f"Going to next page")
         elif (previous_n_clicks > 0) and (button_id == "previous-button"):
-            app.current_page = app.current_page - 1
+            dash_app.current_page = dash_app.current_page - 1
             logging.info(f"Going to previous page")
         else:
             raise PreventUpdate
-        if app.current_page < 0:
-            app.current_page = len(app.search_queries) - 1
-        elif app.current_page >= len(app.search_queries):
-            app.current_page = 0
-        return app.search_queries[app.current_page]
+        if dash_app.current_page < 0:
+            dash_app.current_page = len(dash_app.search_queries) - 1
+        elif dash_app.current_page >= len(dash_app.search_queries):
+            dash_app.current_page = 0
+        return dash_app.search_queries[dash_app.current_page]
     raise PreventUpdate
 
 
-@app.callback(
+@dash_app.callback(
     Output("images-row", "children", allow_duplicate=True),
     Output("download-button", "disabled"),
     Input({"type": "image", "index": ALL}, "n_clicks"),
@@ -248,11 +249,11 @@ def select_img(
     disable_button = True
     if not click_data:
         return current_children, disable_button
-    current_page = app.search_queries[app.current_page]
+    current_page = dash_app.search_queries[dash_app.current_page]
     clicked_img = ctx.triggered_id.index
     if click_data[clicked_img] != 0:
-        app.selection_state[current_page][clicked_img] = app.selection_state[current_page][clicked_img] + 1
-    click_data = app.selection_state[current_page]
+        dash_app.selection_state[current_page][clicked_img] = dash_app.selection_state[current_page][clicked_img] + 1
+    click_data = dash_app.selection_state[current_page]
     idx_to_update = [i for i, click in enumerate(click_data) if click is not None]
     if len(idx_to_update) == 0:
         return current_children, disable_button
@@ -260,21 +261,21 @@ def select_img(
         current_img_url = current_children[idx]["props"]["children"][0]["props"]["src"]
         if click_data[idx] % 2 == 1:
             current_children[idx]["props"]["children"][0]["props"]["className"] = "image clicked"
-            if current_img_url not in app.imgs_url_to_dwnl[current_page]:
-                app.imgs_url_to_dwnl[current_page].append(current_img_url)
+            if current_img_url not in dash_app.imgs_url_to_dwnl[current_page]:
+                dash_app.imgs_url_to_dwnl[current_page].append(current_img_url)
                 logging.info(f"Add image to download list [{current_img_url}]")
         else:
             current_children[idx]["props"]["children"][0]["props"]["className"] = "image"
-            if current_img_url in app.imgs_url_to_dwnl[current_page]:
-                app.imgs_url_to_dwnl[current_page].remove(current_img_url)
+            if current_img_url in dash_app.imgs_url_to_dwnl[current_page]:
+                dash_app.imgs_url_to_dwnl[current_page].remove(current_img_url)
                 logging.info(f"Remove image from download list [{current_img_url}]")
-    if len(sum(app.imgs_url_to_dwnl.values(), [])) > 0:
+    if len(sum(dash_app.imgs_url_to_dwnl.values(), [])) > 0:
         disable_button = False
-    logging.info(f"Updated download list: {app.imgs_url_to_dwnl}")
+    logging.info(f"Updated download list: {dash_app.imgs_url_to_dwnl}")
     return current_children, disable_button
 
 
-@app.callback(
+@dash_app.callback(
     Output("download-zip", "data"),
     Input("download-button", "n_clicks"),
     prevent_initial_call=True,
@@ -289,12 +290,12 @@ def download_imgs(
     :return: dict of file content (base64 encoded) and metadata used by the Download component.
     """
     logging.debug(f"Callback triggered: download_imgs [{n_clicks}]")
-    if n_clicks and len(sum(app.imgs_url_to_dwnl.values(), [])) > 0:
-        with zipfile.ZipFile(app.folder_name, "w") as zipf:
-            for key in app.imgs_url_to_dwnl:
-                logging.info(f"Downloading images [{key}]: {app.imgs_url_to_dwnl[key]}")
-                use_idx = True if len(app.imgs_url_to_dwnl[key]) > 1 else False
-                for i, image_url in enumerate(app.imgs_url_to_dwnl[key]):
+    if n_clicks and len(sum(dash_app.imgs_url_to_dwnl.values(), [])) > 0:
+        with zipfile.ZipFile(dash_app.folder_name, "w") as zipf:
+            for key in dash_app.imgs_url_to_dwnl:
+                logging.info(f"Downloading images [{key}]: {dash_app.imgs_url_to_dwnl[key]}")
+                use_idx = True if len(dash_app.imgs_url_to_dwnl[key]) > 1 else False
+                for i, image_url in enumerate(dash_app.imgs_url_to_dwnl[key]):
                     response = requests.get(image_url)
                     if response.status_code == 200:
                         image_data = response.content
@@ -302,11 +303,11 @@ def download_imgs(
                             zipf.writestr(f"{key}_{i + 1}.png", image_data)
                         else:
                             zipf.writestr(f"{key}.png", image_data)
-        return dcc.send_file(app.folder_name)
+        return dcc.send_file(dash_app.folder_name)
 
 
 if __name__ == '__main__':
-    app.run_server(
+    dash_app.run_server(
         debug=False,
         dev_tools_hot_reload=False,
     )
